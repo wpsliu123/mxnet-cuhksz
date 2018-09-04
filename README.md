@@ -27,6 +27,11 @@ Otherwise, please just install the CPU version of mxnet
 pip install mxnet
 ```
 
+If you want to install notedown plug-in and open .md file in ipython notebook, please
+```
+pip install https://github.com/mli/notedown/tarball/master
+jupyter notebook --NotebookApp.contents_manager_class='notedown.NotedownContentsManager'
+```
 ## Table of contents
 
 ### Week 1: Introduction of deep learning
