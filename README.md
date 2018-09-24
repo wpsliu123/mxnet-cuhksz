@@ -35,3 +35,6 @@ jupyter notebook --NotebookApp.contents_manager_class='notedown.NotedownContents
 ## Table of contents
 
 ### Week 1: Introduction of deep learning
+### Week 2: Machine learning basics
+### Week 3: Multilayer perceptron 
+### Week 4: Convolutional neural networks (CNNs)
