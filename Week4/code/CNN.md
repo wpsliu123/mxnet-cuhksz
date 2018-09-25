@@ -7,8 +7,8 @@ from __future__ import print_function
 import mxnet as mx
 import numpy as np
 from mxnet import nd, autograd, gluon
-ctx = mx.cpu()
-# ctx = mx.gpu()
+#ctx = mx.cpu()
+ctx = mx.gpu(1)
 mx.random.seed(1)
 ```
 
@@ -24,7 +24,7 @@ mx.random.seed(1)
 
 ## MNIST data (last one, we promise!)
 
-```{.python .input}
+```{.python .input  n=2}
 batch_size = 64
 num_inputs = 784
 num_outputs = 10
@@ -57,7 +57,7 @@ Each node in a convolutional layer is associated with a 3D block (height x width
 
 The output tensor is produced by sliding the kernel across the input image skipping locations according to a pre-defined *stride* (but we'll just assume that to be 1 in this tutorial). Let's initialize some such kernels from scratch.
 
-```{.python .input}
+```{.python .input  n=3}
 #######################
 #  Set the scale for weight initialization and choose 
 #  the number of hidden units in the fully-connected layer 
@@ -85,7 +85,7 @@ params = [W1, b1, W2, b2, W3, b3, W4, b4]
 
 And assign space for gradients
 
-```{.python .input}
+```{.python .input  n=4}
 for param in params:
     param.attach_grad()
 ```
@@ -94,12 +94,22 @@ for param in params:
 
 To write a convolution when using *raw MXNet*, we use the function ``nd.Convolution()``. This function takes a few important arguments: inputs (``data``), a 4D weight matrix (``weight``), a bias (``bias``), the shape of the kernel (``kernel``), and a number of filters (``num_filter``).
 
-```{.python .input}
+```{.python .input  n=5}
 for data, _ in train_data:
     data = data.as_in_context(ctx)
     break
 conv = nd.Convolution(data=data, weight=W1, bias=b1, kernel=(3,3), num_filter=num_filter_conv_layer1)
 print(conv.shape)
+```
+
+```{.json .output n=5}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "(64, 20, 26, 26)\n"
+ }
+]
 ```
 
 Note the shape. The number of examples (64) remains unchanged. The number of channels (also called *filters*) has increased to 20. And because the (3,3) kernel can only be applied in 26 different heights and widths (without the kernel busting over the image border), our output is 26,26. There are some weird padding tricks we can use when we want the input and output to have the same height and width dimensions, but we won't get into that now.
@@ -108,23 +118,33 @@ Note the shape. The number of examples (64) remains unchanged. The number of cha
 
 The other new component of this model is the pooling layer. Pooling gives us a way to downsample in the spatial dimensions. Early convnets typically used average pooling, but max pooling tends to give better results.
 
-```{.python .input}
+```{.python .input  n=6}
 pool = nd.Pooling(data=conv, pool_type="max", kernel=(2,2), stride=(2,2))
 print(pool.shape)
+```
+
+```{.json .output n=6}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "(64, 20, 13, 13)\n"
+ }
+]
 ```
 
 Note that the batch and channel components of the shape are unchanged but that the height and width have been downsampled from (26,26) to (13,13).
 
 ## Activation function
 
-```{.python .input}
+```{.python .input  n=7}
 def relu(X):
     return nd.maximum(X,nd.zeros_like(X))
 ```
 
 ## Softmax output
 
-```{.python .input}
+```{.python .input  n=8}
 def softmax(y_linear):
     exp = nd.exp(y_linear-nd.max(y_linear))
     partition = nd.sum(exp, axis=0, exclude=True).reshape((-1,1))
@@ -133,7 +153,7 @@ def softmax(y_linear):
 
 ## Softmax cross-entropy loss
 
-```{.python .input}
+```{.python .input  n=9}
 def softmax_cross_entropy(yhat_linear, y):
     return - nd.nansum(y * nd.log_softmax(yhat_linear), axis=0, exclude=True)
 ```
@@ -142,7 +162,7 @@ def softmax_cross_entropy(yhat_linear, y):
 
 Now we're ready to define our model
 
-```{.python .input}
+```{.python .input  n=10}
 def net(X, debug=False):
     ########################
     #  Define the computation of the first convolutional layer
@@ -194,13 +214,23 @@ def net(X, debug=False):
 
 We can now print out the shapes of the activations at each layer by using the debug flag.
 
-```{.python .input}
+```{.python .input  n=11}
 output = net(data, debug=True)
+```
+
+```{.json .output n=11}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "h1 shape: [64 20 13 13]\nh2 shape: [64 50  4  4]\nFlat h2 shape: [ 64 800]\nh3 shape: [ 64 128]\nyhat_linear shape: [64 10]\n"
+ }
+]
 ```
 
 ## Optimizer
 
-```{.python .input}
+```{.python .input  n=12}
 def SGD(params, lr):    
     for param in params:
         param[:] = param - lr * param.grad
@@ -208,7 +238,7 @@ def SGD(params, lr):
 
 ## Evaluation metric
 
-```{.python .input}
+```{.python .input  n=13}
 def evaluate_accuracy(data_iterator, net):
     numerator = 0.
     denominator = 0.
@@ -225,8 +255,8 @@ def evaluate_accuracy(data_iterator, net):
 
 ## The training loop
 
-```{.python .input}
-epochs = 1
+```{.python .input  n=14}
+epochs = 10
 learning_rate = .01
 smoothing_constant = .01
 
@@ -252,6 +282,16 @@ for e in range(epochs):
     test_accuracy = evaluate_accuracy(test_data, net)
     train_accuracy = evaluate_accuracy(train_data, net)
     print("Epoch %s. Loss: %s, Train_acc %s, Test_acc %s" % (e, moving_loss, train_accuracy, test_accuracy))
+```
+
+```{.json .output n=14}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Epoch 0. Loss: 0.11470950754748017, Train_acc 0.97326666, Test_acc 0.9751\nEpoch 1. Loss: 0.06817891484006161, Train_acc 0.98366666, Test_acc 0.9817\nEpoch 2. Loss: 0.04676463426140159, Train_acc 0.9867333, Test_acc 0.9846\nEpoch 3. Loss: 0.03827529050449695, Train_acc 0.98863333, Test_acc 0.9843\nEpoch 4. Loss: 0.03556006793871461, Train_acc 0.99265, Test_acc 0.9894\nEpoch 5. Loss: 0.030146567633215954, Train_acc 0.99446666, Test_acc 0.9888\nEpoch 6. Loss: 0.021846805577707785, Train_acc 0.9956333, Test_acc 0.9902\nEpoch 7. Loss: 0.02069694173896175, Train_acc 0.99521667, Test_acc 0.9896\nEpoch 8. Loss: 0.017463439963071748, Train_acc 0.99658334, Test_acc 0.9891\nEpoch 9. Loss: 0.016590571176578233, Train_acc 0.9965, Test_acc 0.9888\n"
+ }
+]
 ```
 
 ## Conclusion

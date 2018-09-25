@@ -21,7 +21,7 @@ $$
 
 下面我们将上述过程实现在`corr2d`函数里。它接受输入数组`X`与核数组`K`，并输出数组`Y`。
 
-```{.python .input  n=1}
+```{.python .input  n=2}
 from mxnet import autograd, nd
 from mxnet.gluon import nn
 
@@ -34,31 +34,31 @@ def corr2d(X, K):  # 本函数已保存在 gluonbook 包中方便以后使用。
     return Y
 ```
 
-```{.json .output n=1}
+```{.json .output n=2}
 [
  {
   "name": "stderr",
   "output_type": "stream",
-  "text": "/home/zli/anaconda3/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.\n  from ._conv import register_converters as _register_converters\n"
+  "text": "/home/zli/anaconda3/lib/python3.6/importlib/_bootstrap.py:219: RuntimeWarning: numpy.dtype size changed, may indicate binary incompatibility. Expected 96, got 88\n  return f(*args, **kwds)\n/home/zli/anaconda3/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.\n  from ._conv import register_converters as _register_converters\n/home/zli/anaconda3/lib/python3.6/importlib/_bootstrap.py:219: RuntimeWarning: numpy.dtype size changed, may indicate binary incompatibility. Expected 96, got 88\n  return f(*args, **kwds)\n/home/zli/anaconda3/lib/python3.6/importlib/_bootstrap.py:219: RuntimeWarning: numpy.dtype size changed, may indicate binary incompatibility. Expected 96, got 88\n  return f(*args, **kwds)\n"
  }
 ]
 ```
 
 我们可以构造图5.1中的输入数组`X`、核数组`K`来验证二维互相关运算的输出。
 
-```{.python .input  n=2}
+```{.python .input  n=3}
 X = nd.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
 K = nd.array([[0, 1], [2, 3]])
 corr2d(X, K)
 ```
 
-```{.json .output n=2}
+```{.json .output n=3}
 [
  {
   "data": {
    "text/plain": "\n[[19. 25.]\n [37. 43.]]\n<NDArray 2x2 @cpu(0)>"
   },
-  "execution_count": 2,
+  "execution_count": 3,
   "metadata": {},
   "output_type": "execute_result"
  }
@@ -71,7 +71,7 @@ corr2d(X, K)
 
 下面的我们基于`corr2d`函数来实现一个自定义的二维卷积层。在初始化函数`__init__`里我们声明`weight`和`bias`这两个模型参数。前向计算函数`forward`则是直接调用`corr2d`函数再加上偏差。
 
-```{.python .input  n=3}
+```{.python .input  n=4}
 class Conv2D(nn.Block):
     def __init__(self, kernel_size, **kwargs):
         super(Conv2D, self).__init__(**kwargs)
@@ -89,23 +89,47 @@ class Conv2D(nn.Block):
 
 下面我们来看一个应用卷积层的简单应用：检测图像中物体的边缘，即找到像素变化的位置。首先我们构造一张$6\times 8$的图像（即高和宽分别为6和8像素的图像）。它中间4列为黑（0），其余为白（1）。
 
-```{.python .input  n=4}
+```{.python .input  n=10}
 X = nd.ones((6, 8))
 X[:, 2:6] = 0
 X
 ```
 
-```{.json .output n=4}
+```{.json .output n=10}
 [
  {
   "data": {
    "text/plain": "\n[[1. 1. 0. 0. 0. 0. 1. 1.]\n [1. 1. 0. 0. 0. 0. 1. 1.]\n [1. 1. 0. 0. 0. 0. 1. 1.]\n [1. 1. 0. 0. 0. 0. 1. 1.]\n [1. 1. 0. 0. 0. 0. 1. 1.]\n [1. 1. 0. 0. 0. 0. 1. 1.]]\n<NDArray 6x8 @cpu(0)>"
   },
-  "execution_count": 4,
+  "execution_count": 10,
   "metadata": {},
   "output_type": "execute_result"
  }
 ]
+```
+
+```{.python .input  n=11}
+nd.transpose(X)
+```
+
+```{.json .output n=11}
+[
+ {
+  "data": {
+   "text/plain": "\n[[1. 1. 1. 1. 1. 1.]\n [1. 1. 1. 1. 1. 1.]\n [0. 0. 0. 0. 0. 0.]\n [0. 0. 0. 0. 0. 0.]\n [0. 0. 0. 0. 0. 0.]\n [0. 0. 0. 0. 0. 0.]\n [1. 1. 1. 1. 1. 1.]\n [1. 1. 1. 1. 1. 1.]]\n<NDArray 8x6 @cpu(0)>"
+  },
+  "execution_count": 11,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
+```{.python .input  n=9}
+# from matplotlib import pyplot as plt
+# %matplotlib inline
+
+# plt.imshow(X.astype('int8'))
 ```
 
 然后我们构造一个高和宽分别为1和2的卷积核`K`。当它与输入做互相关运算时，如果横向相邻元素相同，输出为0；否则输出为非0。

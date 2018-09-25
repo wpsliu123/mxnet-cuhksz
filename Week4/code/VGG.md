@@ -6,7 +6,7 @@ As we already noticed in AlexNet, the number of layers in networks keeps on incr
 
 We begin with the usual import ritual
 
-```python
+```{.python .input  n=1}
 from __future__ import print_function
 import mxnet as mx
 from mxnet import nd, autograd
@@ -15,14 +15,23 @@ import numpy as np
 mx.random.seed(1)
 ```
 
-```python
-ctx = mx.gpu()
+```{.json .output n=1}
+[
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "/home/zli/anaconda3/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.\n  from ._conv import register_converters as _register_converters\n"
+ }
+]
+```
+
+```{.python .input  n=2}
+ctx = mx.gpu(1)
 ```
 
 ## Load up a dataset
 
-
-```python
+```{.python .input  n=3}
 batch_size = 64
 
 def transform(data, label):
@@ -36,9 +45,9 @@ test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST(train=False, tra
 
 ## The VGG architecture
 
-A key aspect of VGG was to use many convolutional blocks with relatively narrow kernels, followed by a max-pooling step and to repeat this block multiple times. What is pretty neat about the code below is that we use functions to *return* network blocks. These are then combined to larger networks (e.g. in `vgg_stack`) and this allows us to construct VGG from components. What is particularly useful here is that we can use it to reparameterize the architecture simply by changing a few lines rather than adding and removing many lines of network definitions. 
+A key aspect of VGG was to use many convolutional blocks with relatively narrow kernels, followed by a max-pooling step and to repeat this block multiple times. What is pretty neat about the code below is that we use functions to *return* network blocks. These are then combined to larger networks (e.g. in `vgg_stack`) and this allows us to construct VGG from components. What is particularly useful here is that we can use it to reparameterize the architecture simply by changing a few lines rather than adding and removing many lines of network definitions.
 
-```python
+```{.python .input  n=4}
 from mxnet.gluon import nn
 
 def vgg_block(num_convs, channels):
@@ -70,25 +79,25 @@ with net.name_scope():
 
 ## Initialize parameters
 
-```python
+```{.python .input  n=5}
 net.collect_params().initialize(mx.init.Xavier(magnitude=2.24), ctx=ctx)
 ```
 
 ## Optimizer
 
-```python
+```{.python .input  n=6}
 trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': .05})
 ```
 
 ## Softmax cross-entropy loss
 
-```python
+```{.python .input  n=7}
 softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
 ```
 
 ## Evaluation loop
 
-```python
+```{.python .input  n=8}
 def evaluate_accuracy(data_iterator, net):
     acc = mx.metric.Accuracy()
     for d, l in data_iterator:
@@ -102,11 +111,11 @@ def evaluate_accuracy(data_iterator, net):
 
 ## Training loop
 
-```python
+```{.python .input}
 ###########################
 #  Only one epoch so tests can run quickly, increase this variable to actually run
 ###########################
-epochs = 1
+epochs = 10
 smoothing_constant = .01
 
 for e in range(epochs):
@@ -132,6 +141,16 @@ for e in range(epochs):
     test_accuracy = evaluate_accuracy(test_data, net)
     train_accuracy = evaluate_accuracy(train_data, net)
     print("Epoch %s. Loss: %s, Train_acc %s, Test_acc %s" % (e, moving_loss, train_accuracy, test_accuracy))    
+```
+
+```{.json .output n=None}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Batch 200. Loss: 2.297618\nBatch 400. Loss: 2.166951\nBatch 600. Loss: 0.939590\nBatch 800. Loss: 0.393490\nEpoch 0. Loss: 0.2623796110016494, Train_acc 0.9398666666666666, Test_acc 0.9394\nBatch 200. Loss: 0.177964\nBatch 400. Loss: 0.150595\nBatch 600. Loss: 0.123598\nBatch 800. Loss: 0.104377\nEpoch 1. Loss: 0.10809132223002922, Train_acc 0.9428166666666666, Test_acc 0.9412\nBatch 200. Loss: 0.095668\n"
+ }
+]
 ```
 
 ## Next

@@ -34,18 +34,28 @@ In this notebooks, we'll explain how it works.
 ## Import dependencies and grab the MNIST dataset
 We'll get going by importing the typical packages and grabbing the MNIST data.
 
-```python
+```{.python .input  n=1}
 from __future__ import print_function
 import mxnet as mx
 import numpy as np
 from mxnet import nd, autograd
 mx.random.seed(1)
-ctx = mx.gpu()
+ctx = mx.gpu(1)
+```
+
+```{.json .output n=1}
+[
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "/home/zli/anaconda3/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.\n  from ._conv import register_converters as _register_converters\n"
+ }
+]
 ```
 
 ## The MNIST dataset
 
-```python
+```{.python .input  n=2}
 batch_size = 64
 num_inputs = 784
 num_outputs = 10
@@ -84,7 +94,7 @@ So that `gamma` and `beta` have the lengths the same as `channel_count`.
 In our implementation, we need to manually reshape `gamma` and `beta` 
 so that they could (be automatically broadcast and) multipy the matrices in the desired way.
 
-```python
+```{.python .input  n=3}
 def pure_batch_norm(X, gamma, beta, eps = 1e-5):
     if len(X.shape) not in (2, 4):
         raise ValueError('only supports dense or 2dconv')
@@ -118,18 +128,44 @@ def pure_batch_norm(X, gamma, beta, eps = 1e-5):
 
 Let's do some sanity checks. We expect each **column** of the input matrix to be normalized.
 
-```python
+```{.python .input  n=4}
 A = nd.array([1,7,5,4,6,10], ctx=ctx).reshape((3,2))
 A
 ```
 
-```python
+```{.json .output n=4}
+[
+ {
+  "data": {
+   "text/plain": "\n[[ 1.  7.]\n [ 5.  4.]\n [ 6. 10.]]\n<NDArray 3x2 @gpu(1)>"
+  },
+  "execution_count": 4,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
+```{.python .input  n=5}
 pure_batch_norm(A,
     gamma = nd.array([1,1], ctx=ctx), 
     beta=nd.array([0,0], ctx=ctx))
 ```
 
-```python
+```{.json .output n=5}
+[
+ {
+  "data": {
+   "text/plain": "\n[[-1.3887286   0.        ]\n [ 0.46290955 -1.2247438 ]\n [ 0.9258191   1.2247438 ]]\n<NDArray 3x2 @gpu(1)>"
+  },
+  "execution_count": 5,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
+```{.python .input  n=6}
 ga = nd.array([1,1], ctx=ctx)
 be = nd.array([0,0], ctx=ctx)
 
@@ -137,8 +173,34 @@ B = nd.array([1,6,5,7,4,3,2,5,6,3,2,4,5,3,2,5,6], ctx=ctx).reshape((2,2,2,2))
 B
 ```
 
-```python
+```{.json .output n=6}
+[
+ {
+  "data": {
+   "text/plain": "\n[[[[1. 6.]\n   [5. 7.]]\n\n  [[4. 3.]\n   [2. 5.]]]\n\n\n [[[6. 3.]\n   [2. 4.]]\n\n  [[5. 3.]\n   [2. 5.]]]]\n<NDArray 2x2x2x2 @gpu(1)>"
+  },
+  "execution_count": 6,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
+```{.python .input  n=7}
 pure_batch_norm(B, ga, be)
+```
+
+```{.json .output n=7}
+[
+ {
+  "data": {
+   "text/plain": "\n[[[[-1.637844    0.881916  ]\n   [ 0.377964    1.385868  ]]\n\n  [[ 0.30779248 -0.51298743]\n   [-1.3337674   1.1285723 ]]]\n\n\n [[[ 0.881916   -0.62994   ]\n   [-1.1338919  -0.12598799]]\n\n  [[ 1.1285723  -0.51298743]\n   [-1.3337674   1.1285723 ]]]]\n<NDArray 2x2x2x2 @gpu(1)>"
+  },
+  "execution_count": 7,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 Our tests seem to support that we've done everything correctly.
@@ -152,7 +214,7 @@ Then here comes another concern: we need to maintain the moving statistics **alo
 
 Now we are ready to define our complete `batch_norm()`:
 
-```python
+```{.python .input  n=8}
 def batch_norm(X,
                gamma,
                beta,
@@ -251,7 +313,7 @@ def batch_norm(X,
 
 ## Parameters and gradients
 
-```python
+```{.python .input  n=9}
 #######################
 #  Set the scale for weight initialization and choose 
 #  the number of hidden units in the fully-connected layer 
@@ -283,21 +345,21 @@ b4 = nd.random_normal(shape=10, scale=weight_scale, ctx=ctx)
 params = [W1, b1, gamma1, beta1, W2, b2, gamma2, beta2, W3, b3, gamma3, beta3, W4, b4]
 ```
 
-```python
+```{.python .input  n=10}
 for param in params:
     param.attach_grad()
 ```
 
 ## Activation functions
 
-```python
+```{.python .input  n=11}
 def relu(X):
     return nd.maximum(X, 0)
 ```
 
 ## Softmax output
 
-```python
+```{.python .input  n=12}
 def softmax(y_linear):
     exp = nd.exp(y_linear-nd.max(y_linear))
     partition = nd.nansum(exp, axis=0, exclude=True).reshape((-1,1))
@@ -306,7 +368,7 @@ def softmax(y_linear):
 
 ## The *softmax* cross-entropy loss function
 
-```python
+```{.python .input  n=13}
 def softmax_cross_entropy(yhat_linear, y):
     return - nd.nansum(y * nd.log_softmax(yhat_linear), axis=0, exclude=True)
 ```
@@ -315,7 +377,7 @@ def softmax_cross_entropy(yhat_linear, y):
 
 We insert the BN layer right after each linear layer.
 
-```python
+```{.python .input  n=14}
 def net(X, is_training = True, debug=False):
     ########################
     #  Define the computation of the first convolutional layer
@@ -368,19 +430,29 @@ def net(X, is_training = True, debug=False):
 
 Can data be passed into the `net()`?
 
-```python
+```{.python .input  n=15}
 for data, _ in train_data:
     data = data.as_in_context(ctx)
     break
 ```
 
-```python
+```{.python .input  n=16}
 output = net(data, is_training=True, debug=True)
+```
+
+```{.json .output n=16}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "h1 shape: [64 20 13 13]\nh2 shape: [64 50  4  4]\nFlat h2 shape: [ 64 800]\nh3 shape: [ 64 128]\nyhat_linear shape: [64 10]\n"
+ }
+]
 ```
 
 ## Optimizer
 
-```python
+```{.python .input  n=17}
 def SGD(params, lr):    
     for param in params:
         param[:] = param - lr * param.grad
@@ -388,7 +460,7 @@ def SGD(params, lr):
 
 ## Evaluation metric
 
-```python
+```{.python .input  n=18}
 def evaluate_accuracy(data_iterator, net):
     numerator = 0.
     denominator = 0.
@@ -407,8 +479,8 @@ def evaluate_accuracy(data_iterator, net):
 
 Note: you may want to use a gpu to run the code below. (And remember to set the `ctx = mx.gpu()` accordingly in the very beginning of this article.)
 
-```python
-epochs = 1
+```{.python .input  n=19}
+epochs = 10
 moving_loss = 0.
 learning_rate = .001
 
@@ -436,6 +508,16 @@ for e in range(epochs):
     test_accuracy = evaluate_accuracy(test_data, net)
     train_accuracy = evaluate_accuracy(train_data, net)
     print("Epoch %s. Loss: %s, Train_acc %s, Test_acc %s" % (e, moving_loss, train_accuracy, test_accuracy)) 
+```
+
+```{.json .output n=19}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Epoch 0. Loss: 0.06310177434605217, Train_acc 0.98878336, Test_acc 0.9891\nEpoch 1. Loss: 0.04248312983334212, Train_acc 0.9927667, Test_acc 0.9922\nEpoch 2. Loss: 0.030706948650892588, Train_acc 0.99471664, Test_acc 0.9929\nEpoch 3. Loss: 0.028577565310829618, Train_acc 0.9946, Test_acc 0.9907\nEpoch 4. Loss: 0.02203182568781574, Train_acc 0.9964667, Test_acc 0.993\nEpoch 5. Loss: 0.017398117093837383, Train_acc 0.9975, Test_acc 0.9933\nEpoch 6. Loss: 0.01469908843404171, Train_acc 0.99738336, Test_acc 0.9934\nEpoch 7. Loss: 0.014101074785468294, Train_acc 0.9981667, Test_acc 0.9939\nEpoch 8. Loss: 0.010638946791178897, Train_acc 0.99873334, Test_acc 0.9937\nEpoch 9. Loss: 0.009176136360176128, Train_acc 0.99866664, Test_acc 0.9938\n"
+ }
+]
 ```
 
 ## Next

@@ -135,6 +135,22 @@ pool2d(X)  # 因为池化层没有模型参数，所以不需要调用参数初�
 
 我们可以手动指定步幅和填充。
 
+```{.python .input  n=7}
+after_padding = nd.zeros((1, 1, 6, 6))
+after_padding[:, :, 1:5, 1:5] = X
+print(after_padding)
+```
+
+```{.json .output n=7}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "\n[[[[ 0.  0.  0.  0.  0.  0.]\n   [ 0.  0.  1.  2.  3.  0.]\n   [ 0.  4.  5.  6.  7.  0.]\n   [ 0.  8.  9. 10. 11.  0.]\n   [ 0. 12. 13. 14. 15.  0.]\n   [ 0.  0.  0.  0.  0.  0.]]]]\n<NDArray 1x1x6x6 @cpu(0)>\n"
+ }
+]
+```
+
 ```{.python .input  n=6}
 pool2d = nn.MaxPool2D(3, padding=1, strides=2)
 pool2d(X)
@@ -154,6 +170,22 @@ pool2d(X)
 ```
 
 当然，我们也可以指定非正方形的池化窗口，并分别指定高和宽上的填充和步幅。
+
+```{.python .input  n=9}
+after_padding = nd.zeros((1, 1, 6, 8))
+after_padding[:, :, 1:5, 2:6] = X
+print(after_padding)
+```
+
+```{.json .output n=9}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "\n[[[[ 0.  0.  0.  0.  0.  0.  0.  0.]\n   [ 0.  0.  0.  1.  2.  3.  0.  0.]\n   [ 0.  0.  4.  5.  6.  7.  0.  0.]\n   [ 0.  0.  8.  9. 10. 11.  0.  0.]\n   [ 0.  0. 12. 13. 14. 15.  0.  0.]\n   [ 0.  0.  0.  0.  0.  0.  0.  0.]]]]\n<NDArray 1x1x6x8 @cpu(0)>\n"
+ }
+]
+```
 
 ```{.python .input  n=7}
 pool2d = nn.MaxPool2D((2, 3), padding=(1, 2), strides=(2, 3))
@@ -177,18 +209,18 @@ pool2d(X)
 
 在处理多通道输入数据时，池化层对每个输入通道分别池化，而不是像卷积层那样对各通道的输入按通道相加。这意味着池化层的输出通道数跟输入通道数相同。下面我们将数组`X`和`X+1`在通道维上连结来构造通道数为2的输入。
 
-```{.python .input  n=8}
+```{.python .input  n=10}
 X = nd.concat(X, X + 1, dim=1)
 X
 ```
 
-```{.json .output n=8}
+```{.json .output n=10}
 [
  {
   "data": {
    "text/plain": "\n[[[[ 0.  1.  2.  3.]\n   [ 4.  5.  6.  7.]\n   [ 8.  9. 10. 11.]\n   [12. 13. 14. 15.]]\n\n  [[ 1.  2.  3.  4.]\n   [ 5.  6.  7.  8.]\n   [ 9. 10. 11. 12.]\n   [13. 14. 15. 16.]]]]\n<NDArray 1x2x4x4 @cpu(0)>"
   },
-  "execution_count": 8,
+  "execution_count": 10,
   "metadata": {},
   "output_type": "execute_result"
  }
@@ -197,18 +229,18 @@ X
 
 池化后，我们发现输出通道数仍然是2。
 
-```{.python .input  n=9}
+```{.python .input  n=11}
 pool2d = nn.MaxPool2D(3, padding=1, strides=2)
 pool2d(X)
 ```
 
-```{.json .output n=9}
+```{.json .output n=11}
 [
  {
   "data": {
    "text/plain": "\n[[[[ 5.  7.]\n   [13. 15.]]\n\n  [[ 6.  8.]\n   [14. 16.]]]]\n<NDArray 1x2x2x2 @cpu(0)>"
   },
-  "execution_count": 9,
+  "execution_count": 11,
   "metadata": {},
   "output_type": "execute_result"
  }
