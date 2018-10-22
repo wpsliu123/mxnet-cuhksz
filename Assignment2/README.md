@@ -1,6 +1,6 @@
 # CIE6032 and MDS6232: Homework 2 Programming - CNN on CIFAR
 
-A simple CNN implementation for image classification. We use Mxnet[(https://mxnet.apache.org/)]/Pytorch[(http://pytorch.org/)] framework and the installation is detailed on the corresponding
+A simple CNN implementation for image classification. We use [Mxnet](https://mxnet.apache.org/)/ [Pytorch](http://pytorch.org/) framework and the installation is detailed on the corresponding
 official website.
 
 ## How to submit your code
