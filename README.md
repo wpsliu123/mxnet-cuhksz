@@ -38,3 +38,7 @@ jupyter notebook --NotebookApp.contents_manager_class='notedown.NotedownContents
 ### Week 2: Machine learning basics
 ### Week 3: Multilayer perceptron 
 ### Week 4: Convolutional neural networks (CNNs)
+### Week 5: Optimization methods
+### Week 6: Mid-term Quiz
+### Week 7: Neural Network Structure
+### Week 8-9: Neural Network Structure + Recurrent Neural Networks (RNNs)
